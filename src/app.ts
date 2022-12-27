@@ -1,3 +1,32 @@
+interface Validateable {
+    value: string | number ,
+    required?: boolean,
+    minLength?: number,
+    maxLength?: number,
+    min?: number,
+    max?: number,
+}
+
+function validate( validateableInput: Validateable) {
+    let isValid = true;
+    if (validateableInput.required) {
+        isValid = isValid && validateableInput.value.toString().trim().length !== 0;
+    }
+    if ( validateableInput.minLength != null && typeof validateableInput.value === 'string' ){
+        isValid = isValid && validateableInput.value.length >= validateableInput.minLength;
+    }
+    if (validateableInput.maxLength != null && typeof validateableInput.value === 'string' ){
+        isValid = isValid && validateableInput.value.length <= validateableInput.maxLength;
+    }
+    if (validateableInput.min != null && typeof validateableInput.value === 'number'){
+        isValid = isValid && validateableInput.value >= validateableInput.min;
+    }
+    if (validateableInput.max != null && typeof validateableInput.value === 'number'){
+        isValid = isValid && validateableInput.value <= validateableInput.max;
+    }
+    return isValid;
+}
+
 function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     const adjDescriptor:PropertyDescriptor = {
@@ -40,7 +69,24 @@ class ProjectInput {
         const enteredDescription = this.descriptionInputElement.value;
         const enteredPeople = this.peopleInputElement.value;
 
-        if (enteredTitle.trim().length === 0 || enteredDescription.trim().length === 0 || enteredPeople.trim().length === 0) {
+        const titleValidate: Validateable = {
+            value: enteredTitle,
+            required: true,
+            minLength: 3,
+        }
+        const descriptionValidate: Validateable = {
+            value: enteredDescription,
+            required: true,
+            minLength: 10,
+            max: 500,
+        }
+        const peopleValidate: Validateable = {
+            value: enteredPeople,
+            min: 5,
+            max: 10,
+        }
+
+        if (!validate(titleValidate) || !validate(descriptionValidate) || !validate(peopleValidate)) {
             alert('invalid input please try again!!')
             return;
         }else{
@@ -48,15 +94,21 @@ class ProjectInput {
         }
     }
 
+    private clearInput () {
+        this.titleInputElement.value = '';
+        this.descriptionInputElement.value = '';
+        this.peopleInputElement.value = '';
+    }
+
     @autobind
     private submitHandler (event: Event) {
         event.preventDefault();
-        // console.log(this.titleInputElement.value);
         const userInput = this.getherUserInput();
 
         if (Array.isArray(userInput)) {
             const [title, desc, people] = userInput;
             console.log(title,desc,people);
+            this.clearInput();
         }
     }
 
