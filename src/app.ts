@@ -1,3 +1,34 @@
+// Class projects state management
+
+class ProjectState {
+    private projects: any[] = [];
+    private static instance = new ProjectState();
+
+    constructor() {
+
+    };
+
+    static getInstance() {
+        if (this.instance){
+            return this.instance;
+        }
+        this.instance = new ProjectState();
+        return this.instance;
+    }
+
+    addProject(title: string, description: string, numberOfPeople: number) {
+        const newProjects = {
+            id: Math.random().toString(),
+            title: title,
+            description: description,
+            people: numberOfPeople
+        };
+        this.projects.push(newProjects);
+    }
+}
+
+const projectState = ProjectState.getInstance();
+
 interface Validateable {
     value: string | number ,
     required?: boolean,
@@ -38,6 +69,37 @@ function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) {
     return adjDescriptor;
 };
 
+// ProjectList Class
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLDivElement;
+    element: HTMLElement;
+
+    constructor(private type: 'active' | 'finished'){
+        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+        this.hostElement = document.getElementById('app')! as HTMLDivElement;
+
+        const importedNode = document.importNode(this.templateElement.content, true);
+
+        this.element = importedNode.firstElementChild as HTMLElement;
+        this.element.id = `${this.type}-projects`;
+
+        this.renderContent();
+        this.attach();
+    }
+
+    private renderContent () {
+        const listId =  `${this.type}-project-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + 'PROJECTS';
+    }
+    
+    private attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.element)
+    }
+}
+
+// ProjectInput class
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -54,7 +116,6 @@ class ProjectInput {
 
         this.element = importedNode.firstElementChild as HTMLFormElement;
         this.element.id = 'user-input';
-       
 
         this.titleInputElement = this.element.querySelector('#title') as HTMLInputElement;
         this.descriptionInputElement = this.element.querySelector('#description') as HTMLInputElement;
@@ -63,6 +124,7 @@ class ProjectInput {
         this.config();
         this.attach();
     }
+
 
     private getherUserInput (): [string, string, number] | undefined {
         const enteredTitle = this.titleInputElement.value;
@@ -120,8 +182,8 @@ class ProjectInput {
     private attach () {
         this.hostElement.insertAdjacentElement('afterbegin', this.element)
     }
-
-   
 }
 
 const prjInput = new ProjectInput();
+const activeProjectsList = new ProjectList('active');
+const finishedProjectsList = new ProjectList('finished');
