@@ -45,13 +45,13 @@ interface Validateable {
     max?: number,
 }
 
-function validate( validateableInput: Validateable) {
-    let isValid = true;
-    if (validateableInput.required) {
-        isValid = isValid && validateableInput.value.toString().trim().length !== 0;
+function validate( validateableInput: Validateable) { // สร้าง function เพื่อตรวจสอบ input
+    let isValid = true; // set ตัวแปร isValid เป็น true
+    if (validateableInput.required) { // รับ req มา เลือกเป็นตัว required 
+        isValid = isValid && validateableInput.value.toString().trim().length !== 0; //  เอามาเช็คว่าตัวแปรที่เข้ามามีค่าไม่เท่ากับ 0 
     }
-    if ( validateableInput.minLength != null && typeof validateableInput.value === 'string' ){
-        isValid = isValid && validateableInput.value.length >= validateableInput.minLength;
+    if ( validateableInput.minLength != null && typeof validateableInput.value === 'string' ){ // ถ้าความยาวไม่เท่ากับ null และค่าของ input เป็น string
+        isValid = isValid && validateableInput.value.length >= validateableInput.minLength; // เอา
     }
     if (validateableInput.maxLength != null && typeof validateableInput.value === 'string' ){
         isValid = isValid && validateableInput.value.length <= validateableInput.maxLength;
@@ -146,7 +146,6 @@ class ProjectInput {
 
         this.config();
         this.attach();
-
     }
 
     // ส่วนของการ Input ข้อมูล 
@@ -188,7 +187,7 @@ class ProjectInput {
         this.peopleInputElement.value = '';
     }
 
-    @autobind
+    @autobind // สร้าง function ในการจัดการการกด add project
     private submitHandler (event: Event) {
         event.preventDefault();
         const userInput = this.getherUserInput();
