@@ -1,5 +1,5 @@
 // Project type more classes & custom type
-enum ProjectStatus { Active , Finish } // สามารถกำหนดได้ว่า type ตัวแปรที่ต้องการให้เป็นมีอะไรบ้าง เช่นตัวนี้จะมี typr สองอันเป็น Active และ Finish
+enum ProjectStatus { Active , Finished } // สามารถกำหนดได้ว่า type ตัวแปรที่ต้องการให้เป็นมีอะไรบ้าง เช่นตัวนี้จะมี typr สองอันเป็น Active และ Finish
 
 class Project { // สร้าง class project ที่สามารถเก็บ type ของตัวแปรได้หลาย type แล้วเอาไปใช้แทน any
     constructor(
@@ -13,7 +13,7 @@ class Project { // สร้าง class project ที่สามารถเ�
 }
 
 // Class projects state management
-type Listener = (Items: Project[]) => void;
+type Listener = (Items: Project[]) => void; // สร้าง type ครอบ class ที่สามารถเก็บได้หลาย type อีกทีนึงได้
 
 class ProjectState {
     private listeners: Listener[] = [];
@@ -68,7 +68,7 @@ function validate( validateableInput: Validateable) { // สร้าง functio
         isValid = isValid && validateableInput.value.toString().trim().length !== 0; //  เอามาเช็คว่าตัวแปรที่เข้ามามีค่าไม่เท่ากับ 0 
     }
     if ( validateableInput.minLength != null && typeof validateableInput.value === 'string' ){ // ถ้าความยาวไม่เท่ากับ null และค่าของ input เป็น string
-        isValid = isValid && validateableInput.value.length >= validateableInput.minLength; // เอา
+        isValid = isValid && validateableInput.value.length >= validateableInput.minLength;
     }
     if (validateableInput.maxLength != null && typeof validateableInput.value === 'string' ){
         isValid = isValid && validateableInput.value.length <= validateableInput.maxLength;
@@ -93,50 +93,77 @@ function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) {
     return adjDescriptor;
 };
 
-// ProjectList Class
-class ProjectList {
-    // สร้างตัวแปรและ ประกาศ type
+// Component base class adding inheritance and generic
+abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // สามารถประกาศ type แบบนี้ได้ (inheritance)
     templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLElement;
-    assignedProjects: Project[];
+    hostElement: T;
+    element: U;
 
-    constructor(private type: 'active' | 'finished'){ // 
-        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-        this.assignedProjects = [];
+    constructor(
+        templateId: string,
+        hostElementId: string,
+        insertAtStart: boolean,
+        newElementId: string,
+    ){
+        this.templateElement = document.getElementById(templateId)! as HTMLTemplateElement;
+        this.hostElement = document.getElementById(hostElementId)! as T;
 
         const importedNode = document.importNode(this.templateElement.content, true);
 
-        this.element = importedNode.firstElementChild as HTMLElement;
-        this.element.id = `${this.type}-projects`;
+        this.element = importedNode.firstElementChild as U;
+        if(newElementId) {
+            this.element.id = newElementId;
+        }
 
-        this.renderContent();
-        this.attach();
-
-        projectState.addListener((project: Project[]) => {
-            this.assignedProjects = project;
-            this.renderProjects();
-        })
+        this.attach(insertAtStart);
     }
 
-    private renderContent () {
+    private attach(insertBegining: boolean) {
+        this.hostElement.insertAdjacentElement(insertBegining ? 'afterbegin' : 'beforeend', this.element)
+    }
+
+    abstract configure(): void
+    abstract renderContent(): void
+}
+
+// ProjectList Class
+class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้างตัวแปรและ ประกาศ type โดยใช้ component
+    assignedProjects: Project[];
+
+    constructor(private type: 'active' | 'finished'){ // เราจะสามารถส่งค่าผ่าน supper() ได้เลย
+        super('project-list', 'app', false ,`${type}-projects`); // ซึ่งปกติจะส่งโดยใช้ getElementById แล้วก็ต้องมี as HTMLTemplateElement ยาวๆ
+        this.assignedProjects = [];
+
+        projectState.addListener((project: Project[]) => {
+            const releventProject = project.filter(prj => { // สร้างตัวที่เอาไว้ return ว่าตัวที่ add เข้ามาอยู่ status ไหน
+                if(this.type == 'active') {
+                    return prj.status === ProjectStatus.Active;
+                }else{
+                    return prj.status === ProjectStatus.Finished;
+                }
+            });
+            this.assignedProjects = releventProject; // แล้วเอามายัดเข้าตัวแปรที่จะเอาไปแสดง
+            this.renderProjects(); // และ call renderProjects
+        })
+        this.renderContent(); // call renderContent
+    }
+
+    configure(): void {}
+
+    renderContent () {
         const listId =  `${this.type}-project-list`;
         this.element.querySelector('ul')!.id = listId;
         this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + 'PROJECTS';
     }
 
-    private renderProjects () {
-        const listEl =  document.getElementById(`${this.type}-project-list`)! as HTMLUListElement;;
+    private renderProjects () {  // function เอาไว้รันสร้าง list project ที่กด add เข้ามา
+        const listEl =  document.getElementById(`${this.type}-project-list`)! as HTMLUListElement; // สร้างตัวแปรเพื่อเก็บก่อนว่าจะเอาไปสร้างที่ active หรือ finished
+        listEl.innerHTML = '';
         for (const prjItem of this.assignedProjects) {
             const listItem = document.createElement('li');
             listItem.textContent = prjItem.title;
             listEl.appendChild(listItem);
         }
-    }
-
-    private attach() {
-        this.hostElement.insertAdjacentElement('beforeend', this.element)
     }
 }
 
