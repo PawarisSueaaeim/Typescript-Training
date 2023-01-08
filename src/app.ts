@@ -13,15 +13,23 @@ class Project { // สร้าง class project ที่สามารถเ�
 }
 
 // Class projects state management
-type Listener = (Items: Project[]) => void; // สร้าง type ครอบ class ที่สามารถเก็บได้หลาย type อีกทีนึงได้
+type Listener<T> = (Items: T[]) => void; // สร้าง type ครอบ class ที่สามารถเก็บได้หลาย type อีกทีนึงได้
 
-class ProjectState {
-    private listeners: Listener[] = [];
+class State<T> {
+    protected listeners: Listener<T>[] = []; // การประกาศตัวแปรแบบ protected หมายถึงจะไม่สามารถเข้าถึงได้จาก class อื่นแต่สามารถเข้าถึงได้จากการสืบทอด (inheritance)
+
+    addListener(listenerFn: Listener<T>) {
+        this.listeners.push(listenerFn);
+    }
+}
+
+class ProjectState extends State<Project>{
+    
     private projects: Project[] = [];
     private static instance = new ProjectState();
 
     private constructor() {
-
+        super();
     };
 
     static getInstance() {
@@ -32,9 +40,6 @@ class ProjectState {
         return this.instance;
     }
 
-    addListener(listenerFn: Listener) {
-        this.listeners.push(listenerFn);
-    }
 
     addProject(title: string, description: string, numberOfPeople: number) {
         const newProjects = new Project(
@@ -134,21 +139,21 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้�
         super('project-list', 'app', false ,`${type}-projects`); // ซึ่งปกติจะส่งโดยใช้ getElementById แล้วก็ต้องมี as HTMLTemplateElement ยาวๆ
         this.assignedProjects = [];
 
-        projectState.addListener((project: Project[]) => {
-            const releventProject = project.filter(prj => { // สร้างตัวที่เอาไว้ return ว่าตัวที่ add เข้ามาอยู่ status ไหน
-                if(this.type == 'active') {
-                    return prj.status === ProjectStatus.Active;
-                }else{
-                    return prj.status === ProjectStatus.Finished;
-                }
-            });
-            this.assignedProjects = releventProject; // แล้วเอามายัดเข้าตัวแปรที่จะเอาไปแสดง
-            this.renderProjects(); // และ call renderProjects
-        })
+        this.configure();
         this.renderContent(); // call renderContent
     }
 
-    configure(): void {}
+    configure() { projectState.addListener((project: Project[]) => {
+        const releventProject = project.filter(prj => { // สร้างตัวที่เอาไว้ return ว่าตัวที่ add เข้ามาอยู่ status ไหน
+            if(this.type == 'active') {
+                return prj.status === ProjectStatus.Active;
+            }else{
+                return prj.status === ProjectStatus.Finished;
+            }
+        });
+        this.assignedProjects = releventProject; // แล้วเอามายัดเข้าตัวแปรที่จะเอาไปแสดง
+        this.renderProjects(); // และ call renderProjects
+    })}
 
     renderContent () {
         const listId =  `${this.type}-project-list`;
@@ -168,29 +173,27 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้�
 }
 
 // ProjectInput class
-class ProjectInput { // ประกาศตัวแปร และ type ของตัวแปร
-    templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLFormElement;
+class ProjectInput extends Component<HTMLDivElement,HTMLFormElement>{ // ประกาศตัวแปร และ type ของตัวแปรโดยใช้ components
     titleInputElement: HTMLInputElement;
     descriptionInputElement: HTMLInputElement;
     peopleInputElement: HTMLInputElement;
 
     constructor() {
-        this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement; // นำตัวแปรด้านบนมาเก็บค่าแต่ละ element โดยใช้ id
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
-
-        const importedNode = document.importNode(this.templateElement.content, true); // 
-
-        this.element = importedNode.firstElementChild as HTMLFormElement;
-        this.element.id = 'user-input';
+        super('project-input','app', true, 'user-input'); // ใช้ super เพื่อลดการเขียนเยอะปกติต้องจับเท่ากับ โดยใช้ getElementById
 
         this.titleInputElement = this.element.querySelector('#title') as HTMLInputElement;
         this.descriptionInputElement = this.element.querySelector('#description') as HTMLInputElement;
         this.peopleInputElement = this.element.querySelector('#people') as HTMLInputElement;
 
-        this.config();
-        this.attach();
+        this.configure();
+    }
+    
+    configure () {
+        this.element.addEventListener('submit', this.submitHandler.bind(this));    
+    }
+
+    renderContent(): void {
+        
     }
 
     // ส่วนของการ Input ข้อมูล 
@@ -243,14 +246,6 @@ class ProjectInput { // ประกาศตัวแปร และ type ข�
             console.log(title,desc,people);
             this.clearInput();
         }
-    }
-
-    private config () {
-        this.element.addEventListener('submit', this.submitHandler.bind(this));    
-    }
-
-    private attach () {
-        this.hostElement.insertAdjacentElement('afterbegin', this.element)
     }
 }
 
