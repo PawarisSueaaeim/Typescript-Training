@@ -1,7 +1,23 @@
+// Project type more classes & custom type
+enum ProjectStatus { Active , Finish } // สามารถกำหนดได้ว่า type ตัวแปรที่ต้องการให้เป็นมีอะไรบ้าง เช่นตัวนี้จะมี typr สองอันเป็น Active และ Finish
+
+class Project { // สร้าง class project ที่สามารถเก็บ type ของตัวแปรได้หลาย type แล้วเอาไปใช้แทน any
+    constructor(
+        public id: string, 
+        public title: string, 
+        public description: string, 
+        public people: number, 
+        public status: ProjectStatus) {
+
+    }
+}
+
 // Class projects state management
+type Listener = (Items: Project[]) => void;
+
 class ProjectState {
-    private listeners: any[] = [];
-    private projects: any[] = [];
+    private listeners: Listener[] = [];
+    private projects: Project[] = [];
     private static instance = new ProjectState();
 
     private constructor() {
@@ -16,17 +32,18 @@ class ProjectState {
         return this.instance;
     }
 
-    addListener(listenerFn: any) {
+    addListener(listenerFn: Listener) {
         this.listeners.push(listenerFn);
     }
 
     addProject(title: string, description: string, numberOfPeople: number) {
-        const newProjects = {
-            id: Math.random().toString(),
-            title: title,
-            description: description,
-            people: numberOfPeople
-        };
+        const newProjects = new Project(
+            Math.random().toString(),
+            title,
+            description,
+            numberOfPeople,
+            ProjectStatus.Active
+        );
         this.projects.push(newProjects);
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
@@ -78,12 +95,13 @@ function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) {
 
 // ProjectList Class
 class ProjectList {
+    // สร้างตัวแปรและ ประกาศ type
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     element: HTMLElement;
-    assignedProjects: any[];
+    assignedProjects: Project[];
 
-    constructor(private type: 'active' | 'finished'){
+    constructor(private type: 'active' | 'finished'){ // 
         this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
         this.hostElement = document.getElementById('app')! as HTMLDivElement;
         this.assignedProjects = [];
@@ -96,7 +114,7 @@ class ProjectList {
         this.renderContent();
         this.attach();
 
-        projectState.addListener((project: any[]) => {
+        projectState.addListener((project: Project[]) => {
             this.assignedProjects = project;
             this.renderProjects();
         })
@@ -123,7 +141,7 @@ class ProjectList {
 }
 
 // ProjectInput class
-class ProjectInput {
+class ProjectInput { // ประกาศตัวแปร และ type ของตัวแปร
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     element: HTMLFormElement;
@@ -132,10 +150,10 @@ class ProjectInput {
     peopleInputElement: HTMLInputElement;
 
     constructor() {
-        this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement;
+        this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement; // นำตัวแปรด้านบนมาเก็บค่าแต่ละ element โดยใช้ id
         this.hostElement = document.getElementById('app')! as HTMLDivElement;
 
-        const importedNode = document.importNode(this.templateElement.content, true);
+        const importedNode = document.importNode(this.templateElement.content, true); // 
 
         this.element = importedNode.firstElementChild as HTMLFormElement;
         this.element.id = 'user-input';
