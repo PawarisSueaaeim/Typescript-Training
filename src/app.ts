@@ -1,12 +1,12 @@
 // drag & drop interfaces
-interface Dragable {
+interface Draggable { // การประกาศ type event ที่
     onDragStart(e: DragEvent): void;
     onDragEnd(e: DragEvent): void;
 }
 interface DragTarget {
     onDragOver(e: DragEvent): void;
-    onDragLeave(e: DragEvent): void;
     onDrop(e: DragEvent): void;
+    onDragLeave(e: DragEvent): void;
 }
 
 // Project type more classes & custom type
@@ -59,6 +59,18 @@ class ProjectState extends State<Project>{ // สร้าง class และส
             ProjectStatus.Active
         );
         this.projects.push(newProjects);
+        this.updateListeners();
+    }
+
+    moveProject (projectId: string, newStatus: ProjectStatus) { // เอาไว้ในการย้ายโปรเจคว่าจะย้ายด้วย id อะไรและย้ายไปที่ไหน(status) โดยใช้ cumtom type ที่เราสร้าง
+        const project = this.projects.find(p => p.id === projectId);
+        if (project && project.status !== newStatus){ // การย้ายโปรเจค status current มันต้องไม่เหมือนกับ newStatus
+            project.status = newStatus;
+            this.updateListeners();
+        }
+    }
+
+    updateListeners() { //เอาไว้ update เมื่อ list มีการเปลี่ยน status
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
         }
@@ -96,7 +108,7 @@ function validate( validateableInput: Validateable) { // สร้าง functio
     return isValid;
 }
 
-function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) {
+function autobind(_: any ,_2: string, descriptor: PropertyDescriptor) { // _ หมายความว่าเรายังไม่ได้ใช้ paramiter นั้นตอนนี้ เลยใส่ไว้กัน error
     const originalMethod = descriptor.value;
     const adjDescriptor:PropertyDescriptor = {
         get() {
@@ -140,7 +152,7 @@ abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // ส
     abstract renderContent(): void
 }
 // Project Item component class เอาไว้เรียกใช้ตอนจะสร้าง Ul list
-class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements Dragable{
+class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements Draggable{
     private project: Project;
       
     get persons () {
@@ -158,8 +170,10 @@ class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements D
       this.renderContent();
     }
 
+    @autobind
     onDragStart(e: DragEvent) {
-        console.log(e);
+        e.dataTransfer!.setData('text/plain', this.project.id);
+        e.dataTransfer!.effectAllowed = 'move';
     }
 
     onDragEnd(_: DragEvent) { // ใส่ _ หมายความว่าเราไม่ได้ใช้ paramiter นี้
@@ -179,7 +193,7 @@ class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements D
 
 }
 // ProjectList Class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้างตัวแปรและ ประกาศ type โดยใช้ component
+class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DragTarget{ // สร้างตัวแปรและ ประกาศ type โดยใช้ component
     assignedProjects: Project[];
 
     constructor(private type: 'active' | 'finished'){ // เราจะสามารถส่งค่าผ่าน supper() ได้เลย
@@ -190,7 +204,32 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้�
         this.renderContent(); // call renderContent
     }
 
+    @autobind
+    onDragOver(e: DragEvent) { 
+        if (e.dataTransfer && e.dataTransfer.types[0] === 'text/plain') {
+            e.preventDefault();
+            const listEl = this.element.querySelector('ul')!;
+            listEl.classList.add('droppable');
+        }
+    }
+
+    @autobind
+    onDragLeave(_: DragEvent) {
+        const listEl = this.element.querySelector('ul')!;
+        listEl.classList.remove('droppable');
+    }
+
+    @autobind
+    onDrop(e: DragEvent) {
+        const projectId = e.dataTransfer!.getData('text/plain'); // สร้างตัวแปรเพื่อรับ id ที่ต้องการย้าย
+        projectState.moveProject(projectId, this.type == 'active' ? ProjectStatus.Active : ProjectStatus.Finished); // call function move project ส่ง id และ status ไป
+    }
+
     configure() { projectState.addListener((project: Project[]) => {
+        this.element.addEventListener('dragover', this.onDragOver);
+        this.element.addEventListener('dragleave', this.onDragLeave);
+        this.element.addEventListener('drop', this.onDrop);
+
         const releventProject = project.filter(prj => { // สร้างตัวที่เอาไว้ return ว่าตัวที่ add เข้ามาอยู่ status ไหน
             if( this.type == 'active' ) {
                 return prj.status === ProjectStatus.Active; // วิธีการใช้ type enum
