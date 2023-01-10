@@ -1,3 +1,14 @@
+// drag & drop interfaces
+interface Dragable {
+    onDragStart(e: DragEvent): void;
+    onDragEnd(e: DragEvent): void;
+}
+interface DragTarget {
+    onDragOver(e: DragEvent): void;
+    onDragLeave(e: DragEvent): void;
+    onDrop(e: DragEvent): void;
+}
+
 // Project type more classes & custom type
 enum ProjectStatus { Active , Finished } // สามารถกำหนดได้ว่า type จะชื่ออะไรโดยใช้ enum
 
@@ -8,9 +19,7 @@ class Project { // สร้าง class project ที่สามารถเ�
         public description: string, 
         public people: number, 
         public status: ProjectStatus
-        ) {
-
-    }
+        ) {}
 }
 
 // Class projects state management
@@ -58,7 +67,7 @@ class ProjectState extends State<Project>{ // สร้าง class และส
 
 const projectState = ProjectState.getInstance();
 
-interface Validateable {
+interface Validateable { // **** เราสามารถใช้ interface ทำการกำหนดว่า input ของ Validateable ต้องเป็นอะไรบ้าง ถ้าเราใช้ตัวแปรนี้แล้วเผลอใส่ input ผิดจะ error ทันที
     value: string | number ,
     required?: boolean,
     minLength?: number,
@@ -131,9 +140,16 @@ abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // ส
     abstract renderContent(): void
 }
 // Project Item component class เอาไว้เรียกใช้ตอนจะสร้าง Ul list
-class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> {
+class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements Dragable{
     private project: Project;
       
+    get persons () {
+        if(this.project.people.toString() == '1'){
+            return '1 person';
+        }else{
+            return this.project.people.toString() + ' persons';
+        }
+    }
     constructor(hostId: string, project: Project) {
       super('single-project', hostId, false, project.id);
       this.project = project;
@@ -141,12 +157,23 @@ class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> {
       this.configure();
       this.renderContent();
     }
+
+    onDragStart(e: DragEvent) {
+        console.log(e);
+    }
+
+    onDragEnd(_: DragEvent) { // ใส่ _ หมายความว่าเราไม่ได้ใช้ paramiter นี้
+        console.log('DragEnd');
+    }
       
-    configure() {}
+    configure() {
+        this.element.addEventListener('dragstart', this.onDragStart);
+        this.element.addEventListener('dragend', this.onDragEnd);
+    }
       
     renderContent() {
       this.element.querySelector('h2')!.textContent = this.project.title;
-      this.element.querySelector('h3')!.textContent = this.project.people.toString();
+      this.element.querySelector('h3')!.textContent = this.persons + ' assigned';
       this.element.querySelector('p')!.textContent = this.project.description;
     }
 
@@ -223,18 +250,18 @@ class ProjectInput extends Component<HTMLDivElement,HTMLFormElement>{ // ปร�
         const titleValidate: Validateable = { // สร้างตัวแปร titleValidate เพื่อเก็บค่า value, required, minLength เพื่อเอาไปตรวจสอบ
             value: enteredTitle,  // จับตัวแปร enteredTitle ยัดลงไป
             required: true,
-            minLength: 3, // เพื่อเอาไว้กำหนดว่าจะต้องมีความยาวต่ำสุดเท่าไหร่
+            minLength: 1, // เพื่อเอาไว้กำหนดว่าจะต้องมีความยาวต่ำสุดเท่าไหร่
         }
         const descriptionValidate: Validateable = { // สร้างตัวแปร descriptionValidate เพื่อเก็บค่า ต่อไปนี้
             value: enteredDescription, // จับตัวแปร enteredDescription ยัดลงไป
             required: true,
-            minLength: 10, 
+            minLength: 1, 
             max: 500, // เพื่อกำหนดจำนวนสูงสุด
         }
         const peopleValidate: Validateable = { // สร้างตัวแปรเพื่อเก็บค่า input ไปตรวจสอบ
             value: enteredPeople,
             required: true,
-            min: 5,
+            min: 1,
             max: 10,
         }
 
