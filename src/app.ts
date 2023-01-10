@@ -1,5 +1,5 @@
 // Project type more classes & custom type
-enum ProjectStatus { Active , Finished } // สามารถกำหนดได้ว่า type ตัวแปรที่ต้องการให้เป็นมีอะไรบ้าง เช่นตัวนี้จะมี type สองอันเป็น Active และ Finish
+enum ProjectStatus { Active , Finished } // สามารถกำหนดได้ว่า type จะชื่ออะไรโดยใช้ enum
 
 class Project { // สร้าง class project ที่สามารถเก็บ type ของตัวแปรได้หลาย type แล้วเอาไปใช้แทน any
     constructor(
@@ -7,7 +7,8 @@ class Project { // สร้าง class project ที่สามารถเ�
         public title: string, 
         public description: string, 
         public people: number, 
-        public status: ProjectStatus) {
+        public status: ProjectStatus
+        ) {
 
     }
 }
@@ -39,7 +40,6 @@ class ProjectState extends State<Project>{ // สร้าง class และส
         this.instance = new ProjectState();
         return this.instance;
     }
-
 
     addProject(title: string, description: string, numberOfPeople: number) {
         const newProjects = new Project(
@@ -104,7 +104,7 @@ abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // ส
     hostElement: T;
     element: U;
 
-    constructor(
+    constructor( // เอาไว้เรียกใช้ที่อื่นๆได้ผ่านตัว super()
         templateId: string,
         hostElementId: string,
         insertAtStart: boolean,
@@ -130,7 +130,7 @@ abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // ส
     abstract configure(): void
     abstract renderContent(): void
 }
-// Project Item component class
+// Project Item component class เอาไว้เรียกใช้ตอนจะสร้าง Ul list
 class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> {
     private project: Project;
       
@@ -165,10 +165,10 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้�
 
     configure() { projectState.addListener((project: Project[]) => {
         const releventProject = project.filter(prj => { // สร้างตัวที่เอาไว้ return ว่าตัวที่ add เข้ามาอยู่ status ไหน
-            if(this.type == 'active') {
-                return prj.status === ProjectStatus.Active;
+            if( this.type == 'active' ) {
+                return prj.status === ProjectStatus.Active; // วิธีการใช้ type enum
             }else{
-                return prj.status === ProjectStatus.Finished;
+                return prj.status === ProjectStatus.Finished; // วิธีการใช้ type enum
             }
         });
         this.assignedProjects = releventProject; // แล้วเอามายัดเข้าตัวแปรที่จะเอาไปแสดง
@@ -185,7 +185,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> { // สร้�
         const listEl =  document.getElementById(`${this.type}-project-list`)! as HTMLUListElement; // สร้างตัวแปรเพื่อเก็บก่อนว่าจะเอาไปสร้างที่ active หรือ finished
         listEl.innerHTML = '';
         for (const prjItem of this.assignedProjects) {
-            new ProjectItem(this.element.id, prjItem);
+            new ProjectItem(this.element.querySelector('ul')!.id, prjItem);
         }
     }
 }
