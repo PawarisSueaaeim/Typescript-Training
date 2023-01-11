@@ -1,5 +1,5 @@
 // drag & drop interfaces
-interface Draggable { // การประกาศ type event ที่
+interface Draggable { // การกำหนด type event
     onDragStart(e: DragEvent): void;
     onDragEnd(e: DragEvent): void;
 }
@@ -155,7 +155,7 @@ abstract class Component <T extends HTMLElement, U extends HTMLElement >{ // ส
 class ProjectItem extends Component<HTMLUListElement,HTMLLIElement> implements Draggable{
     private project: Project;
       
-    get persons () {
+    get persons () { //เอาไว้เช็คว่า people input มีเท่าไหร่
         if(this.project.people.toString() == '1'){
             return '1 person';
         }else{
